@@ -1,0 +1,21 @@
+*~
+.nfs*
+*.swp
+
+# out/executable files
+*.o
+*.out
+*.exe
+output
+
+# vscode files
+.vscode
+
+# files and directories named "temp"
+temp.*
+temp
+*.tmp
+
+# Mac
+__MACOSX
+*.DS_Store
