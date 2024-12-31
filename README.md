@@ -8,13 +8,13 @@ By: Dylan Harvey, Agilan Gunalan, Gregory Brown
 Guys do NOT google the result of the calculation 2^11 it is NOT an already existing game I swear
 ## californiaTrail/
 California Trail, a game inspired from the classic Oregon Trail.
+## mazes/
+A simple maze game
 ## snek/
 Snake, snake snaaaaaaaakeeeeeeeee!!!!
 ## sudonku/
 Sudonku (number puzzle game)
 ## sweepminer/
 We be sweepin the mines
-## mazes/
-A simple maze game
 ## totris/
 Totris (Falling block game)
