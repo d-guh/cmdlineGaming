@@ -1,0 +1,35 @@
+~ Wage num
+5
+~ Starting Wages
+~ 1. Factory worker from the north
+500
+~ 2. Blacksmith working for the rail company
+400
+~ 3. Freedman from the south looking for a new future
+300
+~ 4. Immigrant from Europe starting a new life
+200
+~ 5. Orphan finding their own way
+100
+~ Randomness in wages?
+1
+~ If so, how much?
+50
+~ Oxen
+70
+~ Medical
+10
+~ Wagon parts
+30
+~ Food
+10
+~ Ammo
+5
+~ Textiles
+5
+~ Tools
+25
+~ Clothing
+10
+~ Guns
+20
