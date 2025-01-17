@@ -9,6 +9,7 @@
 #include "inputs.h"
 #include "introduction.h"
 #include "inventory.h"
+#include "encounters.h"
 #include <unistd.h>
 #include <chrono>
 #include <thread>
@@ -70,6 +71,15 @@ int main()
     system("clear");
     PrintLine("Leaving the shop and starting your journey...");
     Pausing();
+
+    Encounters encounters;
+    encounters.GuessTime("You prepare to take the shot...", 1, 400);
+    encounters.GuessTime("You prepare to take the shot...", 1, 400);
+    encounters.GuessTime("You prepare to take the shot...", 1, 400);
+    encounters.GuessTime("You prepare to take the shot...", 1, 400);
+    encounters.GuessTime("You prepare to take the shot...", 1, 400);
+    encounters.GuessTime("You prepare to take the shot...", 1, 400);
+    encounters.GuessTime("You prepare to take the shot...", 1, 400);
 
     return 0;
 }

@@ -1,7 +1,7 @@
 COMPILER = g++
 OPTIONS = -Wall
 PROGRAM = california
-FILES = california.cpp introduction.cpp inputs.cpp inventory.cpp
+FILES = california.cpp introduction.cpp inputs.cpp inventory.cpp encounters.cpp
 
 $(PROGRAM): $(FILES)
 	$(COMPILER) $(OPTIONS) $(FILES) -o $(PROGRAM)
