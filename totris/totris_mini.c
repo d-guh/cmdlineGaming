@@ -1,3 +1,10 @@
+/* totris_mini.c
+ * This version of totris renders using half block unicode characters, 
+ * allowing it to fit into a smaller space while remaining square.
+ * The downside of this is one character cannot share colors between the halfs,
+ * so they may be overwritten/modified in edge cases.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -5,6 +12,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <termios.h>
+#include <fcntl.h>
 
 #define ROWS 20
 #define COLS 10
@@ -105,6 +113,13 @@ void enable_raw_input() {
 
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
   printf("\x1b[?25l"); // Hide cursor
+}
+
+void flush_input() {
+  char buf[16];
+  while (read(STDIN_FILENO, buf, sizeof(buf)) > 0) {
+    // Discard all input
+  }
 }
 
 void clear_screen() {
@@ -222,7 +237,6 @@ void game_loop() {
 
   while (1) {
     usleep(50000); // 100ms
-    print_grid();
     tick++;
 
     char c;
@@ -264,6 +278,7 @@ void game_loop() {
 
       place_totromino(&current, 1);
     }
+    print_grid(); // Useful for debug
   }
 }
 
