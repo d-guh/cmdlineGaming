@@ -1,6 +1,11 @@
 *~
+~*
 .nfs*
 *.swp
+.fuse_hidden*
+.directory
+.Trash-*
+*.old
 
 # out/executable files
 *.o
