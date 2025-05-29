@@ -132,6 +132,7 @@ void draw_cell(uint r, uint c) {
   bool filled = grid[r][c].state;
   bool upper = (r % 2) == 0;
   bool lower = (r % 2) == 1;
+  bool full = (upper && (grid[r+1][c].state)) || (lower && (grid[r-1][c].state));
   uint color = grid[r][c].color;
 
   move_cursor(screen_r, c);
@@ -140,7 +141,7 @@ void draw_cell(uint r, uint c) {
   if (!filled) {
     printf(BLOCK_EMPTY);
   } else {
-    if (upper && lower) {
+    if (full) {
       printf(BLOCK_FULL);
     } else if (upper) {
       printf(BLOCK_TOP);
@@ -174,17 +175,36 @@ void print_grid() {
   }
 }
 
+bool can_place(const Totromino* t, int row, int col) {
+  for (uint r = 0; r < 4; r++) {
+    for (uint c = 0; c < 4; c++) {
+      if (t->shape[r][c]) {
+        uint gr = row + r;
+        uint gc = col + c;
+
+        if (gr < 0 || gr >= ROWS || gc < 0 || gc >= COLS) {
+          return false;
+        }
+        
+        if (grid[gr][gc].state) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
 void place_totromino(Totromino* t, uint filled) {
   for (uint r = 0; r < 4; r++) {
     for (uint c = 0; c < 4; c++) {
       if (t->shape[r][c]) {
         uint gr = t->row + r;
         uint gc = t->col + c;
-        if (gr >= 0 && gr < ROWS && gc >= 0 && gc < COLS) {
-          grid[gr][gc].state = filled ? 1 : 0;
-          grid[gr][gc].color = t->color;
-          draw_cell(gr, gc);
-        }
+        // Redundant check was here
+        grid[gr][gc].state = filled ? 1 : 0;
+        grid[gr][gc].color = t->color;
+        draw_cell(gr, gc);
       }
     }
   }
@@ -193,9 +213,8 @@ void place_totromino(Totromino* t, uint filled) {
 void spawn_totromino() {
   current.col = COLS/2 - 2;
   current.row = 0;
-  memcpy(current.shape, shapes[0], sizeof(current.shape));
-  current.color = 2;
-  place_totromino(&current, 1);
+  memcpy(current.shape, shapes[rand() % 7], sizeof(current.shape));
+  current.color = rand() % 7 + 1;
 }
 
 void game_loop() {
@@ -209,23 +228,40 @@ void game_loop() {
     char c;
     if (read(STDIN_FILENO, &c, 1) == 1) {
       place_totromino(&current, 0);
-      if (c == 'a')
-        current.col--;
-      else if (c == 'd')
-        current.col++;
-      else if (c == 's')
-        current.row++;
+
+      uint new_row = current.row;
+      uint new_col = current.col;
+      
+      if (c == 'a') new_col--;
+      else if (c == 'd') new_col++;
+      else if (c == 's') new_row++;
+      
+      if (can_place(&current, new_row, new_col)) {
+        current.row = new_row;
+        current.col = new_col;
+      }
+
       place_totromino(&current, 1);
     }
 
     if (tick % 10 == 0) {
       place_totromino(&current, 0);
-      current.row++;
-      if (current.row >= ROWS) {
-        move_cursor(ROWS/2 + 1, 0);
-        printf("Game Over!\n");
-        break;
+      int new_row = current.row + 1;
+
+      if (can_place(&current, new_row, current.col)) {
+        current.row = new_row;
+      } else {
+        place_totromino(&current, 1);
+
+        spawn_totromino();
+        if (!can_place(&current, current.row, current.col)) {
+          move_cursor(ROWS/2 + 1, 0);
+          printf("Game Over!\n");
+          break;
+        }
+        // place_totromino(&current, 1);
       }
+
       place_totromino(&current, 1);
     }
   }
