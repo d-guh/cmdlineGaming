@@ -24,7 +24,16 @@
 #define BLOCK_BOTTOM "▄"
 #define BLOCK_EMPTY  " "
 
+#define BORDER_URC  "┐"
+#define BORDER_ULC  "┌"
+#define BORDER_LRC  "┘"
+#define BORDER_LLC  "└"
+#define BORDER_VERT "│"
+#define BORDER_HORZ "─"
+
 struct termios orig_termios;
+
+bool debug_mode = false;
 
 typedef struct {
   bool state;  // 0: empty, 1: full
@@ -40,20 +49,6 @@ typedef struct {
 Cell grid[ROWS][COLS] = {0};
 Totromino current;
 uint score = 0;
-
-const char* border =
-"┌          ┐00 01  ┌──────┐\n"
-"│          │02 03  │      │\n"
-"│          │04 05  │      │\n"
-"│          │06 07  └──────┘\n"
-"│          │08 09\n"
-"│          │10 11\n"
-"│          │12 13\n"
-"│          │14 15\n"
-"│          │16 17\n"
-"│          │18 19\n"
-"└──────────┘\n"
-;
 
 const bool shapes[][4][4] = {
   { // I
@@ -100,6 +95,14 @@ const bool shapes[][4][4] = {
   }
 };
 
+void parse_args(int argc, char** argv) {
+  for (int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], "--debug") == 0) {
+      debug_mode = true;
+    }
+  }
+}
+
 void disable_raw_input() {
   tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
   printf("\x1b[?25h"); // Show cursor
@@ -134,11 +137,69 @@ void reset_color() {
   printf("\x1b[0m");
 }
 
+void draw_border() {
+  const uint score_box_width = 8;
+  const uint score_box_height = 4;
+  const uint width = COLS;
+  const uint height = ROWS / 2;
+
+  // Body rows
+  for (uint r = 0; r <= height; r++) {
+    if (r == 0) { // 1st row
+      printf(BORDER_ULC);
+      for (uint i = 0; i < width; i++) printf(BLOCK_EMPTY);
+      printf(BORDER_URC);
+
+      if (debug_mode)
+        printf("%02u %02u ", r * 2, r * 2 + 1);
+      else
+        printf("  ");
+      printf(BORDER_ULC);
+      for (uint i = 0; i < score_box_width - 2; i++) printf(BORDER_HORZ);
+      printf(BORDER_URC "\n");
+    } else if (r < height) { // Middle rows
+      printf(BORDER_VERT);
+      for (uint c = 0; c < width; c++) {
+        printf(BLOCK_EMPTY);
+      }
+      printf(BORDER_VERT);
+
+      if (debug_mode)
+        printf("%02u %02u ", r * 2, r * 2 + 1);
+      else
+        printf("  ");
+
+      if (r <= score_box_height - 2) { // Score box
+        printf(BORDER_VERT);
+        for (uint i = 0; i < score_box_width - 2; i++) printf(" ");
+        printf(BORDER_VERT "\n");
+      } else if (r == 3) {
+        printf(BORDER_LLC);
+        for (uint i = 0; i < score_box_width - 2; i++) printf(BORDER_HORZ);
+        printf(BORDER_LRC "\n");
+      } else {
+        printf("\n");
+      }
+    } else { // Last row
+      printf(BORDER_LLC);
+      for (uint i = 0; i < width; i++) printf(BORDER_HORZ);
+      printf(BORDER_LRC);
+    }
+  }
+}
+
 void draw_score() {
-  move_cursor (1, COLS + 9);
-  printf("Score:");
-  move_cursor (2, COLS + 9);
-  printf("%06u", score);
+  if (!debug_mode) {
+    move_cursor (1, COLS + 4);
+    printf("Score:");
+    move_cursor (2, COLS + 4);
+    printf("%06u", score);
+  } else {
+    move_cursor (1, COLS + 8);
+    printf("Score:");
+    move_cursor (2, COLS + 8);
+    printf("%06u", score);
+  }
 }
 
 void draw_cell(uint r, uint c) {
@@ -169,15 +230,6 @@ void draw_cell(uint r, uint c) {
 
   reset_color();
   fflush(stdout);
-}
-
-void draw_grid() {
-  printf(border);
-  for (uint r = 0; r < ROWS; r+=2) {
-    for (uint c = 0; c < COLS; c++) {
-      draw_cell(r, c);
-    }
-  }
 }
 
 void print_grid() {
@@ -277,7 +329,7 @@ bool clear_lines() {
         grid[0][col].state = 0;
         draw_cell(0, col);
       }
-      // r++;
+      r++;
     }
   }
 
@@ -329,6 +381,8 @@ void game_loop() {
       } else {
         place_totromino(&current, 1);
 
+        if (clear_lines())
+          draw_score();
         spawn_totromino();
         if (!can_place(&current, current.row, current.col)) {
           move_cursor(ROWS/2 + 1, 0);
@@ -337,19 +391,19 @@ void game_loop() {
         }
       }
     }
-    if (clear_lines())
-      draw_score();
     place_totromino(&current, 1);
     
-    print_grid(); // Useful for debug
+    if (debug_mode) print_grid();
   }
 }
 
-int main() {
+int main(int argc, char** argv) {
+  parse_args(argc, argv);
+
   enable_raw_input();
   clear_screen();
 
-  draw_grid();
+  draw_border();
   draw_score();
   spawn_totromino();
   game_loop();
