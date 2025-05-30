@@ -225,11 +225,34 @@ void place_totromino(Totromino* t, uint filled) {
   }
 }
 
+void rotate_totromino(Totromino* t) {
+  bool temp[4][4];
+  for (uint r = 0; r < 4; r++) {
+    for (uint c = 0; c < 4; c++) {
+      temp[c][3 - r] = t->shape[r][c]; // Rotate 90deg clockwise
+    }
+  }
+
+  Totromino rotated = *t;
+  memcpy(rotated.shape, temp, sizeof(temp));
+  if (can_place(&rotated, rotated.row, rotated.col)) {
+    memcpy(t->shape, temp, sizeof(temp));
+  }
+}
+
 void spawn_totromino() {
   current.col = COLS/2 - 2;
   current.row = 0;
   memcpy(current.shape, shapes[rand() % 7], sizeof(current.shape));
   current.color = rand() % 7 + 1;
+}
+
+void insta_drop(Totromino* t) {
+  place_totromino(t, 0);
+  while (can_place(t, t->row + 1, t->col)) {
+    t->row++;
+  }
+  place_totromino(t, 1);
 }
 
 void game_loop() {
@@ -249,10 +272,14 @@ void game_loop() {
       if (c == 'a') new_col--;
       else if (c == 'd') new_col++;
       else if (c == 's') new_row++;
+      else if (c == 'w') rotate_totromino(&current);
+      else if (c == ' ') insta_drop(&current);
       
-      if (can_place(&current, new_row, new_col)) {
-        current.row = new_row;
-        current.col = new_col;
+      if (c == 'a' || c == 'd' || c == 's') {
+        if (can_place(&current, new_row, new_col)) {
+          current.row = new_row;
+          current.col = new_col;
+        }
       }
 
       place_totromino(&current, 1);
