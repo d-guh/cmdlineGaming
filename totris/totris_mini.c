@@ -3,6 +3,7 @@
  * allowing it to fit into a smaller space while remaining square.
  * The downside of this is one character cannot share colors between the halfs,
  * so they may be overwritten/modified in edge cases.
+ * It also a complete pain to work with so it will probably be lacking features.
 */
 
 #include <stdio.h>
@@ -27,23 +28,24 @@ struct termios orig_termios;
 
 typedef struct {
   bool state;  // 0: empty, 1: full
-  uint color : 3; // \x1b[3_m (0-7)
+  uint color : 3; // \x1b[3_m (0-7) ANSI
 } Cell;
 
 typedef struct {
-  uint row, col; // Position
+  uint row, col; // Position in grid
   bool shape[4][4];
-  uint color : 3; // \x1b[3_m (0-7)
+  uint color : 3;
 } Totromino;
 
 Cell grid[ROWS][COLS] = {0};
 Totromino current;
+uint score = 0;
 
 const char* border =
-"┌          ┐00 01\n"
-"│          │02 03\n"
-"│          │04 05\n"
-"│          │06 07\n"
+"┌          ┐00 01  ┌──────┐\n"
+"│          │02 03  │      │\n"
+"│          │04 05  │      │\n"
+"│          │06 07  └──────┘\n"
 "│          │08 09\n"
 "│          │10 11\n"
 "│          │12 13\n"
@@ -115,13 +117,6 @@ void enable_raw_input() {
   printf("\x1b[?25l"); // Hide cursor
 }
 
-void flush_input() {
-  char buf[16];
-  while (read(STDIN_FILENO, buf, sizeof(buf)) > 0) {
-    // Discard all input
-  }
-}
-
 void clear_screen() {
   printf("\x1b[2J");
   printf("\x1b[H");
@@ -137,6 +132,13 @@ void set_color(uint color) {
 
 void reset_color() {
   printf("\x1b[0m");
+}
+
+void draw_score() {
+  move_cursor (1, COLS + 9);
+  printf("Score:");
+  move_cursor (2, COLS + 9);
+  printf("%06u", score);
 }
 
 void draw_cell(uint r, uint c) {
@@ -162,8 +164,6 @@ void draw_cell(uint r, uint c) {
       printf(BLOCK_TOP);
     } else if (lower) {
       printf(BLOCK_BOTTOM);
-    } else {
-      printf("?");
     }
   }
 
@@ -216,7 +216,6 @@ void place_totromino(Totromino* t, uint filled) {
       if (t->shape[r][c]) {
         uint gr = t->row + r;
         uint gc = t->col + c;
-        // Redundant check was here
         grid[gr][gc].state = filled ? 1 : 0;
         grid[gr][gc].color = t->color;
         draw_cell(gr, gc);
@@ -255,11 +254,47 @@ void insta_drop(Totromino* t) {
   place_totromino(t, 1);
 }
 
+bool clear_lines() {
+  uint cleared = 0;
+  for (uint r = ROWS - 1; r > 0; r--) {
+    bool full = true;
+    for (uint c = 0; c < COLS; c++) {
+      if (!grid[r][c].state) {
+        full = false;
+        break;
+      }
+    }
+  
+    if (full) {
+      cleared++;
+      for (uint row = r; row > 0; row--) {
+        for (uint col = 0; col < COLS; col++) {
+          grid[row][col] = grid[row-1][col];
+          draw_cell(row, col);
+        }
+      }
+      for (uint col = 0; col < COLS; col++) {
+        grid[0][col].state = 0;
+        draw_cell(0, col);
+      }
+      // r++;
+    }
+  }
+
+  switch (cleared) {
+    case 1: score += 100; break;
+    case 2: score += 300; break;
+    case 3: score += 500; break;
+    case 4: score += 1000; break;
+  }
+  return cleared;
+}
+
 void game_loop() {
   uint tick = 0;
 
   while (1) {
-    usleep(50000); // 100ms
+    usleep(50000); // 50ms
     tick++;
 
     char c;
@@ -273,7 +308,7 @@ void game_loop() {
       else if (c == 'd') new_col++;
       else if (c == 's') new_row++;
       else if (c == 'w') rotate_totromino(&current);
-      else if (c == ' ') insta_drop(&current);
+      else if (c == ' ') { insta_drop(&current); tick = 10; }
       
       if (c == 'a' || c == 'd' || c == 's') {
         if (can_place(&current, new_row, new_col)) {
@@ -300,11 +335,12 @@ void game_loop() {
           printf("Game Over!\n");
           break;
         }
-        // place_totromino(&current, 1);
       }
-
-      place_totromino(&current, 1);
     }
+    if (clear_lines())
+      draw_score();
+    place_totromino(&current, 1);
+    
     print_grid(); // Useful for debug
   }
 }
@@ -314,6 +350,7 @@ int main() {
   clear_screen();
 
   draw_grid();
+  draw_score();
   spawn_totromino();
   game_loop();
   
