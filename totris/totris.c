@@ -247,7 +247,7 @@ bool can_place(const Totromino* t, int row, int col) {
   return true;
 }
 
-void place_totromino(Totromino* t, uint filled) {
+void place_totromino(Totromino* t, bool filled) {
   for (uint r = 0; r < 4; r++) {
     for (uint c = 0; c < 4; c++) {
       if (t->shape[r][c]) {
@@ -289,6 +289,32 @@ void insta_drop(Totromino* t) {
     t->row++;
   }
   place_totromino(t, 1);
+}
+
+void draw_shadow(const Totromino* t, bool filled) {
+  Totromino shadow = *t;
+  while (can_place(&shadow, shadow.row + 1, shadow.col)) {
+    shadow.row++;
+  }
+
+  for (uint r = 0; r < 4; r++) {
+    for (uint c = 0; c < 4; c++) {
+      if (shadow.shape[r][c]) {
+        uint gr = shadow.row + r;
+        uint gc = shadow.col + c;
+        if (gr < ROWS && !grid[gr][gc].state) {
+          move_cursor(gr, gc * 2);
+          if (filled) {
+            set_color(t->color);
+            printf(BLOCK_SHADOW);
+          } else {
+            printf(BLOCK_EMPTY);
+          }
+          reset_color();
+        }
+      }
+    }
+  }
 }
 
 bool clear_lines() {
@@ -337,6 +363,7 @@ void game_loop() {
     char c;
     if (read(STDIN_FILENO, &c, 1) == 1) {
       place_totromino(&current, 0);
+      draw_shadow(&current, 0);
 
       uint new_row = current.row;
       uint new_col = current.col;
@@ -354,16 +381,19 @@ void game_loop() {
         }
       }
 
+      draw_shadow(&current, 1);
       place_totromino(&current, 1);
     }
 
     if (tick % 10 == 0) {
       place_totromino(&current, 0);
+      draw_shadow(&current, 0);
       int new_row = current.row + 1;
 
       if (can_place(&current, new_row, current.col)) {
         current.row = new_row;
       } else {
+        draw_shadow(&current, 1);
         place_totromino(&current, 1);
 
         if (clear_lines())
@@ -376,6 +406,7 @@ void game_loop() {
         }
       }
     }
+    draw_shadow(&current, 1);
     place_totromino(&current, 1);
     
     if (debug_mode) print_grid();
