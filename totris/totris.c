@@ -1,9 +1,6 @@
-/* totris_mini.c
- * This version of totris renders using half block unicode characters, 
- * allowing it to fit into a smaller space while remaining square.
- * The downside of this is one character cannot share colors between the halfs,
- * so they may be overwritten/modified in edge cases.
- * It also a complete pain to work with so it will probably be lacking features.
+/* totris.c
+ * This version of totris renders using full block unicode characters, 
+ * printed double wide to remain square.
 */
 
 #include <stdio.h>
@@ -20,6 +17,7 @@
 #define OFFSET 1 // Offset from border
 
 #define BLOCK_FULL   "██"
+#define BLOCK_SHADOW "░░"
 #define BLOCK_EMPTY  "  "
 
 #define BORDER_URC  "┐"
